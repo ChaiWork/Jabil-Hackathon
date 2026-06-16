@@ -149,8 +149,11 @@ def _parse_hs_codes_from_text(
     if miti_matches:
         logger.info(f"[Crawler] Found {len(miti_matches)} MITI-style rows in crawled text.")
         for match in miti_matches:
-            raw_hs = re.sub(r"[\s\.]", "", match.group(1))
-            hs_code = raw_hs[:6]
+            raw_hs = re.sub(r"[\s\.]", "", match.group(1)) + match.group(2)
+            if len(raw_hs) < 6:
+                hs_code = raw_hs.ljust(6, "0")
+            else:
+                hs_code = raw_hs
             description = match.group(3).strip()
             # Clean leading dashes and dots from description
             description = re.sub(r"^[\s\-\.]+", "", description)
@@ -179,7 +182,7 @@ def _parse_hs_codes_from_text(
             if len(raw_hs) < 6:
                 continue
 
-            hs_code = raw_hs[:6]  # Normalize to 6 digits
+            hs_code = raw_hs  # Keep full digits
             description = match.group(2).strip()[:200]
             tariff_percent = float(match.group(3))
 
@@ -312,7 +315,7 @@ async def _crawl_pdf_url(
                                         tariff_percent = _parse_malaysia_tariff_rate(mfn_rate, staging_cat)
                                         
                                         rules.append({
-                                            "hs_code": hs_code_6,
+                                            "hs_code": hs_code_full,
                                             "product_description": description,
                                             "origin_country": origin_country,
                                             "destination_country": destination_country,

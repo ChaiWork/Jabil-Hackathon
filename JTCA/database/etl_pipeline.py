@@ -52,8 +52,10 @@ def _normalize_hs_code(raw: str) -> Optional[str]:
         return None
     if len(cleaned) < 4:
         return None
-    # Normalize to 6 digits (standard HS code length)
-    return cleaned[:6].ljust(6, "0")
+    # Normalize to 6-10 digits: keep full digits if it's more than 6, otherwise pad to 6
+    if len(cleaned) < 6:
+        return cleaned.ljust(6, "0")
+    return cleaned
 
 
 def _clean_description(raw: str) -> str:

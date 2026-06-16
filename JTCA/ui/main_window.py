@@ -78,7 +78,6 @@ def get_theme_stylesheet(theme_name: str) -> str:
         font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
     }}
 
     QWidget {{

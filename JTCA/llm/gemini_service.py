@@ -77,7 +77,7 @@ Response format:
 Rules:
 - confidence_score must be an integer 0-100
 - suggested_tariff_percent must be a number (e.g., 5.0, 25.0, 0.0)
-- suggested_hs_code must be 6-digit string
+- suggested_hs_code must be a 6 to 10-digit HS Code string (keep full length from the context, do not truncate)
 - reasoning_trace must be a list of 3-5 strings explaining your decision
 - If origin country has an FTA with the destination, note it in fta_applicable
 - If fields like shipment_id, material_type, plant_code, supplier_name, shipping_country, or wto_member_status are mentioned or can be inferred from the document description/text, extract them. Otherwise, default them sensibly based on standard Jabil trade practices (e.g., Material: ZROH, Plant: US02, Supplier: EMERSON, Shipping Country: Malaysia, WTO: Yes).
@@ -429,7 +429,7 @@ def extract_rules_from_text(text: str, origin: str, destination: str = "Global",
 Analyze the following crawled web page / document content and extract a list of import tariff rules.
 
 For each rule, extract:
-- hs_code: 6-digit HS Code string
+- hs_code: 6 to 10-digit HS Code string
 - product_description: description of the product or product category
 - tariff_percent: Float tariff percentage rate (e.g., 2.5, 0.0, 25.0)
 - fta_name: Name of the free trade agreement or trade program (e.g. ACFTA, USMCA, MFN, General, None)
@@ -475,9 +475,11 @@ If no rules are found in the text, return an empty list: [].
         if isinstance(extracted, list):
             rules = []
             for item in extracted:
-                hs = str(item.get("hs_code", "")).strip().replace(".", "")[:6]
+                hs = str(item.get("hs_code", "")).strip().replace(".", "")
                 if not hs.isdigit() or len(hs) < 4:
                     continue
+                if len(hs) < 6:
+                    hs = hs.ljust(6, "0")
                 rules.append({
                     "hs_code": hs,
                     "product_description": str(item.get("product_description", ""))[:200],
