@@ -2,6 +2,7 @@
 ============================================================
 JTCA - Login & Role Selection Dialog
 Select between Admin and Trade Analyst roles
+Supports Email/Password verification and Registration
 ============================================================
 """
 
@@ -99,7 +100,7 @@ class LoginDialog(QDialog):
     def __init__(self, parent=None, theme: str = "dark"):
         super().__init__(parent)
         self.setWindowTitle("Sign In — JTCA Compliance Assistant")
-        self.setMinimumSize(560, 480)
+        self.setMinimumSize(560, 560)
         self.setModal(True)
         self.selected_role = None
 
@@ -197,8 +198,8 @@ class LoginDialog(QDialog):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        layout.setContentsMargins(36, 30, 36, 30)
+        layout.setSpacing(14)
+        layout.setContentsMargins(36, 24, 36, 24)
 
         # ── Header ──────────────────────────────────────
         header_layout = QVBoxLayout()
@@ -249,14 +250,42 @@ class LoginDialog(QDialog):
         self.admin_card.clicked.connect(self._select_role)
         self.analyst_card.clicked.connect(self._select_role)
 
-        # ── Name Input ──────────────────────────────────
-        name_lbl = QLabel("ENTER YOUR NAME")
-        layout.addWidget(name_lbl)
+        # ── Email Input ──────────────────────────────────
+        email_lbl = QLabel("EMAIL / USERNAME")
+        email_lbl.setObjectName("email_lbl")
+        layout.addWidget(email_lbl)
 
-        self.name_input = QLineEdit()
-        self.name_input.setPlaceholderText("Enter your full name (e.g. Sarah Connor)")
-        self.name_input.textChanged.connect(self._validate)
-        layout.addWidget(self.name_input)
+        self.email_input = QLineEdit()
+        self.email_input.setPlaceholderText("Enter your email (e.g. admin@jabil.com)")
+        self.email_input.textChanged.connect(self._validate)
+        layout.addWidget(self.email_input)
+
+        # ── Password Input ───────────────────────────────
+        password_lbl = QLabel("PASSWORD")
+        password_lbl.setObjectName("password_lbl")
+        layout.addWidget(password_lbl)
+
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setPlaceholderText("Enter your password")
+        self.password_input.textChanged.connect(self._validate)
+        layout.addWidget(self.password_input)
+
+        # ── Register Link ────────────────────────────────
+        register_row = QHBoxLayout()
+        register_row.setSpacing(4)
+        register_row.setAlignment(Qt.AlignLeft)
+
+        no_account_lbl = QLabel("Don't have an account?")
+        no_account_lbl.setStyleSheet("font-size: 11px;")
+        
+        self.register_btn = QPushButton("Register here")
+        self.register_btn.setCursor(Qt.PointingHandCursor)
+        self.register_btn.clicked.connect(self._on_register_clicked)
+        
+        register_row.addWidget(no_account_lbl)
+        register_row.addWidget(self.register_btn)
+        layout.addLayout(register_row)
 
         layout.addSpacing(4)
 
@@ -279,7 +308,16 @@ class LoginDialog(QDialog):
             jabil_lbl.setStyleSheet("color: #0A3D91; font-size: 26px; font-weight: 800; letter-spacing: 4px;")
             subtitle_lbl.setStyleSheet("color: #1565C0; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;")
             prompt_lbl.setStyleSheet("color: #4A5568; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;")
-            name_lbl.setStyleSheet("color: #4A5568; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;")
+            email_lbl.setStyleSheet("color: #4A5568; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;")
+            password_lbl.setStyleSheet("color: #4A5568; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;")
+            no_account_lbl.setStyleSheet("color: #4A5568; font-size: 11px;")
+            self.register_btn.setStyleSheet("""
+                QPushButton {
+                    background: transparent; border: none; color: #0A3D91;
+                    font-size: 11px; font-weight: bold; text-decoration: underline; padding: 0;
+                }
+                QPushButton:hover { color: #1565C0; }
+            """)
             self.close_btn.setStyleSheet("""
                 QPushButton {
                     background-color: transparent;
@@ -300,7 +338,16 @@ class LoginDialog(QDialog):
             jabil_lbl.setStyleSheet("color: #FFFFFF; font-size: 26px; font-weight: 800; letter-spacing: 4px;")
             subtitle_lbl.setStyleSheet("color: #42A5F5; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;")
             prompt_lbl.setStyleSheet("color: #90CAF9; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;")
-            name_lbl.setStyleSheet("color: #90CAF9; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;")
+            email_lbl.setStyleSheet("color: #90CAF9; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;")
+            password_lbl.setStyleSheet("color: #90CAF9; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;")
+            no_account_lbl.setStyleSheet("color: #90CAF9; font-size: 11px;")
+            self.register_btn.setStyleSheet("""
+                QPushButton {
+                    background: transparent; border: none; color: #42A5F5;
+                    font-size: 11px; font-weight: bold; text-decoration: underline; padding: 0;
+                }
+                QPushButton:hover { color: #64B5F6; }
+            """)
             self.close_btn.setStyleSheet("""
                 QPushButton {
                     background-color: transparent;
@@ -328,33 +375,54 @@ class LoginDialog(QDialog):
         self.analyst_card.set_selected(role_id == "Trade Analyst")
         self._validate()
 
+    def _on_register_clicked(self):
+        if not self.selected_role:
+            QMessageBox.warning(self, "Register", "Please select a system role card first.")
+            return
+
+        from ui.register_dialog import RegisterDialog
+        dialog = RegisterDialog(selected_role=self.selected_role, parent=self, theme=self.theme)
+        if dialog.exec() == QDialog.Accepted:
+            self.email_input.setText(dialog.email_input.text().strip())
+
     def _validate(self):
-        # Disable Sign In until the user has typed a value and the email/username
-        # matches an already-registered user record.
-        name = self.name_input.text().strip()
+        email = self.email_input.text().strip()
+        password = self.password_input.text()
         has_role = self.selected_role is not None
-        has_name = len(name) > 0
+        has_email = len(email) > 0
+        has_password = len(password) >= 6
 
-        is_registered = False
-        if has_role and has_name:
-            try:
-                from services.auth import AuthService
-                is_registered = AuthService().user_exists(name, self.selected_role)
-            except Exception:
-                is_registered = False
-
-        self.sign_in_btn.setEnabled(has_role and has_name and is_registered)
-
+        self.sign_in_btn.setEnabled(has_role and has_email and has_password)
 
     def _on_sign_in(self):
-        name = self.name_input.text().strip()
+        email = self.email_input.text().strip()
+        password = self.password_input.text()
+
         if not self.selected_role:
             QMessageBox.warning(self, "Sign In", "Please select a system role.")
             return
-        if not name:
-            QMessageBox.warning(self, "Sign In", "Please enter your name.")
+        if not email:
+            QMessageBox.warning(self, "Sign In", "Please enter your email.")
+            return
+        if not password:
+            QMessageBox.warning(self, "Sign In", "Please enter your password.")
             return
 
-        from services.session import SessionManager
-        SessionManager().login(name, self.selected_role)
-        self.accept()
+        try:
+            from services.auth import AuthService
+            auth_service = AuthService()
+            ok = auth_service.login(email, password, self.selected_role)
+
+            if ok:
+                display_name = auth_service.get_user_display_name(email)
+                from services.session import SessionManager
+                SessionManager().login(display_name, self.selected_role, email)
+                self.accept()
+            else:
+                QMessageBox.warning(
+                    self, "Authentication Failed",
+                    "Invalid email, password, or incorrect system role selected.\n\n"
+                    "Please check your credentials or register a new account."
+                )
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Authentication service error:\n{e}")

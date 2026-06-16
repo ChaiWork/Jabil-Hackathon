@@ -902,6 +902,7 @@ class MainWindow(QMainWindow):
 
         self.pills = [
             QLabel(f"{db_type}+ChromaDB"),
+            QLabel("MongoDB (Raw Staging)"),
             QLabel(model_name),
             QLabel("SentenceTransformers")
         ]
@@ -1028,6 +1029,7 @@ class MainWindow(QMainWindow):
         session = SessionManager()
         username = session.get_username()
         role = session.get_role()
+        email = session.get_email()
         
         # Update user section
         self.profile_user_lbl.setText(username)
@@ -1036,7 +1038,11 @@ class MainWindow(QMainWindow):
         initials = "".join([part[0] for part in username.split() if part])[:2].upper()
         self.sidebar_avatar.setText(initials if initials else "US")
         self.top_avatar.setText(initials if initials else "US")
-        self.top_avatar.setToolTip(username)
+        
+        # Tooltip with user info
+        tooltip_text = f"{username} ({email})" if email else username
+        self.sidebar_avatar.setToolTip(tooltip_text)
+        self.top_avatar.setToolTip(tooltip_text)
         
         self.profile_role_lbl.setText(role.upper())
         

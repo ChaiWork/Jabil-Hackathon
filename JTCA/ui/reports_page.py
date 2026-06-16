@@ -9,12 +9,106 @@ import logging
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QFrame,
-    QGridLayout, QMessageBox, QFileDialog,
+    QGridLayout, QMessageBox, QFileDialog, QDialog,
+    QFormLayout, QTextEdit, QLineEdit,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont
 
 logger = logging.getLogger(__name__)
+
+
+class AuditDetailDialog(QDialog):
+    """
+    Pop-up dialog showing full details of a selected audit trail log row.
+    """
+
+    def __init__(self, log_entry: tuple, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("🔍 Audit Trail Details")
+        self.setMinimumWidth(540)
+        self.setMinimumHeight(440)
+        self.setModal(True)
+        self.setObjectName("dialog")
+        
+        # Unpack tuple: (timestamp, shipment_id, action, ai_recommendation, human_decision, reviewer_name, notes)
+        timestamp, shipment_id, action, ai_rec, human_dec, reviewer, notes = log_entry
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(16)
+        layout.setContentsMargins(24, 20, 24, 20)
+        
+        # Header card
+        header = QFrame()
+        header.setObjectName("header_frame")
+        header_layout = QVBoxLayout(header)
+        header_layout.setContentsMargins(16, 12, 16, 12)
+        
+        title = QLabel("📋  AUDIT LOG ENTRY DETAILS")
+        title.setStyleSheet("font-size: 14px; font-weight: 800; letter-spacing: 1px; color: #2196F3;")
+        
+        subtitle = QLabel(f"Shipment: {shipment_id}")
+        subtitle.setStyleSheet("font-size: 11px;")
+        
+        header_layout.addWidget(title)
+        header_layout.addWidget(subtitle)
+        layout.addWidget(header)
+        
+        # Form details
+        form_frame = QFrame()
+        form_frame.setObjectName("card")
+        form = QFormLayout(form_frame)
+        form.setSpacing(12)
+        form.setContentsMargins(16, 12, 16, 12)
+        
+        def add_field(label: str, text: str, is_text_area: bool = False, color: str = None):
+            lbl = QLabel(label.upper())
+            lbl.setStyleSheet("font-weight: bold; font-size: 10px; color: #718096; letter-spacing: 0.5px;")
+            
+            if is_text_area:
+                val = QTextEdit()
+                val.setPlainText(text or "—")
+                val.setReadOnly(True)
+                val.setMaximumHeight(80)
+                val.setStyleSheet("font-size: 12px; padding: 6px;")
+            else:
+                val = QLineEdit()
+                val.setText(text or "—")
+                val.setReadOnly(True)
+                style = "font-size: 12px; padding: 6px;"
+                if color:
+                    style = f"font-size: 12px; font-weight: bold; color: {color}; padding: 6px;"
+                val.setStyleSheet(style)
+            form.addRow(lbl, val)
+
+        action_colors = {
+            "AI_PROCESSED": "#42A5F5",
+            "HUMAN_APPROVED": "#10B981",
+            "HUMAN_REJECTED_OVERRIDE": "#EF4444",
+        }
+        act_color = action_colors.get(action, "#FFFFFF")
+        
+        formatted_time = timestamp[:19].replace("T", " ")
+        add_field("Time Stamp", formatted_time)
+        add_field("Shipment ID", shipment_id)
+        add_field("Action Taken", action, color=act_color)
+        add_field("AI Recommendation", ai_rec)
+        add_field("Human Decision", human_dec)
+        add_field("Reviewer", reviewer)
+        add_field("Reviewer Notes", notes, is_text_area=True)
+        
+        layout.addWidget(form_frame)
+        
+        # Close button
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        close_btn = QPushButton("Close")
+        close_btn.setObjectName("btn_secondary")
+        close_btn.setMinimumHeight(38)
+        close_btn.setMinimumWidth(110)
+        close_btn.clicked.connect(self.accept)
+        btn_layout.addWidget(close_btn)
+        layout.addLayout(btn_layout)
 
 
 class ReportsPage(QWidget):
@@ -128,7 +222,12 @@ class ReportsPage(QWidget):
         self.audit_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.audit_table.verticalHeader().setVisible(False)
         self.audit_table.setShowGrid(False)
+        self.audit_table.doubleClicked.connect(self._on_row_double_clicked)
         layout.addWidget(self.audit_table)
+        
+        hint = QLabel("💡 Double-click any audit log row to view full details")
+        hint.setStyleSheet("font-size: 11px; font-style: italic; color: #718096;")
+        layout.addWidget(hint)
 
     def refresh_data(self):
         try:
@@ -148,6 +247,7 @@ class ReportsPage(QWidget):
 
             # Load audit log using PostgreSQL-safe API
             rows = get_recent_audit_log(limit=200)
+            self._audit_rows = rows
 
             self.audit_table.setRowCount(0)
             for row_idx, row in enumerate(rows):
@@ -174,6 +274,12 @@ class ReportsPage(QWidget):
 
         except Exception as e:
             logger.error(f"Reports refresh error: {e}")
+
+    def _on_row_double_clicked(self, index):
+        row = index.row()
+        if hasattr(self, "_audit_rows") and row < len(self._audit_rows):
+            dialog = AuditDetailDialog(self._audit_rows[row], self)
+            dialog.exec()
 
     def _export_report(self):
         try:
