@@ -30,11 +30,11 @@ from database.postgres_db import (
 
     # Tariff Rules
     get_all_tariff_rules,
+    get_regulation_source_for_hs,
     insert_tariff_rule,
     delete_tariff_rules_by_fta,
     delete_tariff_rules_by_ids,
     clear_crawled_rules,
-
     # Audit Log
     insert_audit_log,
     get_audit_log,
@@ -54,6 +54,7 @@ __all__ = [
     "update_shipment_status",
     "get_dashboard_stats",
     "get_all_tariff_rules",
+    "get_regulation_source_for_hs",
     "insert_tariff_rule",
     "delete_tariff_rules_by_fta",
     "delete_tariff_rules_by_ids",

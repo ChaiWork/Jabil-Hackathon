@@ -94,6 +94,7 @@ class ResultCard(QFrame):
         self.source_lbl = QLabel("")
         self.source_lbl.setStyleSheet("font-size: 10px;")
         self.source_lbl.setWordWrap(True)
+        self.source_lbl.setOpenExternalLinks(True)
         layout.addWidget(self.source_lbl)
 
         # Explanation label
@@ -126,8 +127,104 @@ class ResultCard(QFrame):
             self.badge_lbl.setVisible(True)
         else:
             self.badge_lbl.setVisible(False)
-        self.source_lbl.setText(f"🔗  {source}" if source else "")
+
+        # Format source URL as clickable link if valid
+        if source:
+            clean_source = source.strip()
+            if (clean_source.startswith("http://") or 
+                clean_source.startswith("https://") or 
+                clean_source.startswith("www.") or
+                "hts.usitc.gov" in clean_source or
+                "ustr.gov" in clean_source):
+                
+                url = clean_source
+                if clean_source.startswith("www."):
+                    url = f"https://{clean_source}"
+                elif not clean_source.startswith("http"):
+                    url = f"https://{clean_source}"
+                
+                label = clean_source
+                if len(clean_source) > 35:
+                    if "/" in clean_source:
+                        label = clean_source.split("/")[-1] or clean_source
+                    if len(label) > 35:
+                        label = label[:32] + "..."
+                
+                self.source_lbl.setText(f"🔗  Source: <a href='{url}' style='color: #42A5F5; text-decoration: underline;'>{label}</a>")
+            else:
+                self.source_lbl.setText(f"🔗  Source: {source}")
+        else:
+            self.source_lbl.setText("")
+            
         self.explanation_lbl.setText(explanation)
+
+
+class CalcStepRow(QFrame):
+    """A highly professional row representing a step in the duty calculation."""
+
+    def __init__(self, step_num: int, label: str, description: str, value_str: str, is_total: bool = False):
+        super().__init__()
+        self.setObjectName("calc_step_row")
+
+        bg_color = "#0F1C2E" if not is_total else "#1B2A4E"
+        border_color = "#1E2D4A" if not is_total else "#2D78D6"
+        text_color = "#FFFFFF"
+        val_color = "#90CAF9" if not is_total else "#42A5F5"
+        font_weight = "Bold" if is_total else "Normal"
+        font_size = "15px" if is_total else "13px"
+
+        self.setStyleSheet(f"""
+            #calc_step_row {{
+                background-color: {bg_color};
+                border: 1px solid {border_color};
+                border-radius: 8px;
+            }}
+        """)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(16, 12, 16, 12)
+
+        # Step Circle Badge
+        badge = QLabel(str(step_num))
+        badge.setAlignment(Qt.AlignCenter)
+        badge_bg = "#2D3748" if not is_total else "#2D78D6"
+        badge.setStyleSheet(f"""
+            background-color: {badge_bg};
+            color: #FFFFFF;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            min-width: 24px;
+            max-width: 24px;
+            min-height: 24px;
+            max-height: 24px;
+        """)
+        layout.addWidget(badge)
+        layout.addSpacing(8)
+
+        # Label and details
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(2)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+
+        title_lbl = QLabel(label)
+        title_lbl.setStyleSheet(f"color: {text_color}; font-size: {font_size}; font-weight: {font_weight};")
+
+        desc_lbl = QLabel(description)
+        desc_lbl.setStyleSheet("color: #718096; font-size: 11px;")
+        desc_lbl.setWordWrap(True)
+
+        text_layout.addWidget(title_lbl)
+        if description:
+            text_layout.addWidget(desc_lbl)
+
+        layout.addLayout(text_layout)
+        layout.addStretch()
+
+        # Value Label
+        val_lbl = QLabel(value_str)
+        val_lbl.setStyleSheet(f"color: {val_color}; font-size: {font_size}; font-weight: bold; font-family: 'Consolas', monospace;")
+        layout.addWidget(val_lbl)
 
 
 # ─────────────────────────────────────────────
@@ -280,25 +377,9 @@ class ShipmentViewPage(QWidget):
 
         self.calc_card = QFrame()
         self.calc_card.setObjectName("card")
-        calc_card_layout = QVBoxLayout(self.calc_card)
-        calc_card_layout.setContentsMargins(16, 14, 16, 14)
-
-        self.calc_text = QTextEdit()
-        self.calc_text.setReadOnly(True)
-        self.calc_text.setMaximumHeight(180)
-        self.calc_text.setStyleSheet(
-            "QTextEdit { font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 13px; "
-            "border: 1px solid #1565C0; border-radius: 6px; padding: 10px; }"
-        )
-        calc_card_layout.addWidget(self.calc_text)
-
-        # Final Value
-        self.final_value_label = QLabel("Final Landed Cost: —")
-        self.final_value_label.setStyleSheet(
-            "font-size: 18px; font-weight: 800; "
-            "padding: 10px 0; letter-spacing: 0.5px;"
-        )
-        calc_card_layout.addWidget(self.final_value_label)
+        self.calc_layout = QVBoxLayout(self.calc_card)
+        self.calc_layout.setContentsMargins(16, 14, 16, 14)
+        self.calc_layout.setSpacing(10)
         layout.addWidget(self.calc_card)
 
         # ── Action Buttons ─────────────────────────────
@@ -374,11 +455,18 @@ class ShipmentViewPage(QWidget):
         # HS Code card
         confidence = shipment.get("confidence_score", 0)
         badge_text, badge_color = self._confidence_badge(confidence)
+        
+        # Dynamically retrieve the regulation source URL from the database
+        from database.postgres_db import get_regulation_source_for_hs
+        hs_code = shipment.get("suggested_hs_code", "")
+        origin = shipment.get("country_of_origin", "")
+        reg_source = get_regulation_source_for_hs(hs_code, origin)
+        
         self.hs_card.set_data(
-            value=shipment.get("suggested_hs_code", "—"),
+            value=hs_code or "—",
             badge_text=badge_text,
             badge_color=badge_color,
-            source=f"hts.usitc.gov",
+            source=reg_source or "hts.usitc.gov",
             explanation="RAG retrieval + Gemini AI classification",
         )
 
@@ -388,7 +476,7 @@ class ShipmentViewPage(QWidget):
             value=f"{tariff:.2f}%",
             badge_text="MFN / FTA" if tariff == 0 else f"{tariff}%",
             badge_color="#10B981" if tariff == 0 else "#F59E0B",
-            source="ustr.gov / hts.usitc.gov",
+            source=reg_source or "ustr.gov / hts.usitc.gov",
             explanation="Retrieved from tariff knowledge base",
         )
 
@@ -399,27 +487,36 @@ class ShipmentViewPage(QWidget):
             badge_color="#10B981" if confidence >= 90 else (
                 "#F59E0B" if confidence >= 70 else "#EF4444"
             ),
-            explanation=(
-                "Auto-routed to Approved Queue"
-                if confidence >= 90
-                else "Requires human review"
-            ),
+            explanation="Requires human review",
         )
 
         # Reasoning trace
         self._populate_reasoning(shipment.get("reasoning_trace", []))
 
-        # Calculation steps
-        from services.duty_calculator import format_duty_breakdown, calculate_landed_cost
+        # Calculation steps (Professional layout)
+        while self.calc_layout.count():
+            item = self.calc_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+                
         duty = shipment.get("estimated_duty", 0)
         value = shipment.get("declared_value", 0)
-        steps = format_duty_breakdown(value, tariff, duty)
-        self.calc_text.setText("\n".join(steps))
-
-        landed = calculate_landed_cost(value, duty)
-        self.final_value_label.setText(
-            f"💰  Total Landed Cost: USD {landed:,.2f}  "
-            f"(Duty: USD {duty:,.2f})"
+        landed = value + duty
+        
+        self.calc_layout.addWidget(
+            CalcStepRow(1, "Declared Value", "Base invoice transaction value (declared by supplier)", f"USD {value:,.2f}")
+        )
+        self.calc_layout.addWidget(
+            CalcStepRow(2, "Applied Tariff Rate", f"Duty rate determined by HS Code: {hs_code}", f"{tariff:.2f}%")
+        )
+        self.calc_layout.addWidget(
+            CalcStepRow(3, "Duty Formula", "Landed calculation formula: Declared Value × Tariff Rate", f"USD {value:,.2f} × {tariff:.2f}%")
+        )
+        self.calc_layout.addWidget(
+            CalcStepRow(4, "Estimated Duty", "Total estimated import duties payable to Customs", f"USD {duty:,.2f}")
+        )
+        self.calc_layout.addWidget(
+            CalcStepRow(5, "Total Landed Cost", "Gross landed value (Declared Value + Estimated Duty)", f"USD {landed:,.2f}", is_total=True)
         )
 
         # Disable buttons based on current status
@@ -484,25 +581,13 @@ class ShipmentViewPage(QWidget):
     def _approve(self):
         if not self._current_shipment:
             return
-        from database.db import update_shipment_status, insert_audit_log
-        from services.session import SessionManager
-
-        sid = self._current_shipment["shipment_id"]
-        reviewer = SessionManager().get_username() or "Human Reviewer"
-        
-        update_shipment_status(sid, "Approved", reviewer_name=reviewer)
-        insert_audit_log(
-            shipment_id=sid,
-            action="HUMAN_APPROVED",
-            ai_recommendation=f"HS:{self._current_shipment.get('suggested_hs_code')}",
-            human_decision="Approved",
-            reviewer_name=reviewer,
-        )
-        self._current_shipment["status"] = "Approved"
-        self._set_status_badge("Approved")
-        self.approve_btn.setEnabled(False)
-        self.shipment_updated.emit()
-        QMessageBox.information(self, "Approved", "✅ Shipment has been APPROVED.")
+        from ui.review_dialog import ApproveDialog
+        dialog = ApproveDialog(self._current_shipment, self)
+        if dialog.exec():
+            self._current_shipment["status"] = "Approved"
+            self._set_status_badge("Approved")
+            self.approve_btn.setEnabled(False)
+            self.shipment_updated.emit()
 
     def _disapprove(self):
         if not self._current_shipment:

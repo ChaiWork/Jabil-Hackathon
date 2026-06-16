@@ -350,6 +350,50 @@ def get_all_tariff_rules() -> list[dict]:
         conn.close()
 
 
+def get_regulation_source_for_hs(hs_code: str, origin_country: str = "") -> str:
+    """Find the regulation source URL or reference for a given HS code and origin country."""
+    if not hs_code or hs_code == "000000":
+        return ""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            # First try exact match with origin country
+            if origin_country:
+                cur.execute(
+                    "SELECT regulation_source FROM tariff_rules WHERE hs_code = %s AND LOWER(origin_country) = LOWER(%s) LIMIT 1",
+                    (hs_code, origin_country)
+                )
+                row = cur.fetchone()
+                if row and row.get("regulation_source"):
+                    return row["regulation_source"]
+                
+            # Try matching HS code alone
+            cur.execute(
+                "SELECT regulation_source FROM tariff_rules WHERE hs_code = %s LIMIT 1",
+                (hs_code,)
+            )
+            row = cur.fetchone()
+            if row and row.get("regulation_source"):
+                return row["regulation_source"]
+                
+            # Try prefix matching (first 6 digits)
+            prefix = hs_code[:6]
+            cur.execute(
+                "SELECT regulation_source FROM tariff_rules WHERE hs_code LIKE %s LIMIT 1",
+                (prefix + "%",)
+            )
+            row = cur.fetchone()
+            if row and row.get("regulation_source"):
+                return row["regulation_source"]
+                
+        return ""
+    except Exception as e:
+        logger.error(f"Error getting regulation source: {e}")
+        return ""
+    finally:
+        conn.close()
+
+
 def insert_tariff_rule(rule: dict) -> bool:
     """
     Insert a single tariff rule.

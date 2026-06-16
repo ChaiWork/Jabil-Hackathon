@@ -796,7 +796,7 @@ class MainWindow(QMainWindow):
         top_bar_layout.addWidget(self.theme_btn)
 
         # User Avatar Circle
-        self.top_avatar = QLabel("CHAI")
+        self.top_avatar = QLabel("US")
         self.top_avatar.setObjectName("top_user_avatar")
         self.top_avatar.setAlignment(Qt.AlignCenter)
         self.top_avatar.setStyleSheet("""
@@ -894,10 +894,15 @@ class MainWindow(QMainWindow):
         pulse_row.addWidget(self.pulse_dot)
         ai_layout.addLayout(pulse_row)
 
-        # Tech pills
+        # Tech pills (dynamic values based on current system configuration)
+        import os
+        db_type = "PostgreSQL" if os.getenv("POSTGRES_URI") else "SQLite"
+        model_name_raw = os.getenv("GEMINI_MODEL_NAME", "gemini-3.5-flash")
+        model_name = model_name_raw.replace("-", " ").title()
+
         self.pills = [
-            QLabel("SQLite+ChromaDB"),
-            QLabel("Gemini 2.0 Flash"),
+            QLabel(f"{db_type}+ChromaDB"),
+            QLabel(model_name),
             QLabel("SentenceTransformers")
         ]
         for pill in self.pills:
@@ -1030,7 +1035,8 @@ class MainWindow(QMainWindow):
         # Initials for avatar
         initials = "".join([part[0] for part in username.split() if part])[:2].upper()
         self.sidebar_avatar.setText(initials if initials else "US")
-        self.top_avatar.setText("CHAI") # Always show CHAI for the top avatar circle as requested, or initials
+        self.top_avatar.setText(initials if initials else "US")
+        self.top_avatar.setToolTip(username)
         
         self.profile_role_lbl.setText(role.upper())
         

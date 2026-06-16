@@ -19,25 +19,18 @@ CONFIDENCE_THRESHOLD = int(os.getenv("CONFIDENCE_THRESHOLD", "90"))
 def route_shipment(confidence_score: float) -> str:
     """
     Determine shipment status based on AI confidence score.
-
-    Business Rules:
-        confidence >= CONFIDENCE_THRESHOLD  → "Approved"
-        confidence <  CONFIDENCE_THRESHOLD  → "Pending Review"
+    Always returns "Pending Review" to enforce Human-in-the-Loop compliance.
 
     Args:
         confidence_score: AI confidence 0-100
 
     Returns:
-        Status string: "Approved" or "Pending Review"
+        Status string: Always "Pending Review"
     """
-    if confidence_score >= CONFIDENCE_THRESHOLD:
-        status = "Approved"
-    else:
-        status = "Pending Review"
-
+    status = "Pending Review"
     logger.info(
         f"Routing: confidence={confidence_score} -> status={status} "
-        f"(threshold={CONFIDENCE_THRESHOLD})"
+        f"(Human-in-the-Loop active, auto-approval disabled)"
     )
     return status
 

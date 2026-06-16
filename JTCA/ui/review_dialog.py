@@ -258,3 +258,168 @@ class ReviewDialog(QDialog):
         except Exception as e:
             logger.error(f"Override save error: {e}")
             QMessageBox.critical(self, "Error", f"Failed to save override:\n{e}")
+
+
+class ApproveDialog(QDialog):
+    """
+    Pop-up dialog for confirming human approval of a shipment.
+    Prompts for reviewer name and optional notes.
+    """
+
+    def __init__(self, shipment: dict, parent=None):
+        super().__init__(parent)
+        self._shipment = shipment
+        self.setWindowTitle("Human Review — Approve Classification")
+        self.setMinimumWidth(500)
+        self.setMinimumHeight(420)
+        self.setModal(True)
+        self.setObjectName("dialog")
+        self._setup_ui()
+
+    def _setup_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(16)
+        layout.setContentsMargins(28, 24, 28, 24)
+
+        # ── Header ─────────────────────────────────────
+        header_frame = QFrame()
+        header_frame.setObjectName("header_frame")
+        header_layout = QVBoxLayout(header_frame)
+        header_layout.setContentsMargins(16, 12, 16, 12)
+
+        title = QLabel("🔍  HUMAN REVIEW — CONFIRM APPROVAL")
+        title.setStyleSheet("font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #10B981;")
+
+        subtitle = QLabel(
+            f"Shipment ID: {self._shipment.get('shipment_id', '')[-16:]}\n"
+            f"Product: {self._shipment.get('product_description', '')[:60]}"
+        )
+        subtitle.setStyleSheet("font-size: 11px;")
+        subtitle.setWordWrap(True)
+
+        header_layout.addWidget(title)
+        header_layout.addWidget(subtitle)
+        layout.addWidget(header_frame)
+
+        # ── Current Classification Summary ─────────────
+        summary_frame = QFrame()
+        summary_frame.setObjectName("card")
+        summary_layout = QVBoxLayout(summary_frame)
+        summary_layout.setContentsMargins(16, 12, 16, 12)
+        summary_layout.setSpacing(6)
+
+        summary_title = QLabel("CLASSIFICATION RECOMMENDATION TO APPROVE")
+        summary_title.setStyleSheet(
+            "font-size: 10px; font-weight: 700; letter-spacing: 1.5px;"
+        )
+        summary_layout.addWidget(summary_title)
+
+        summary_row = QHBoxLayout()
+        for label, key, fmt in [
+            ("HS Code", "suggested_hs_code", "{}"),
+            ("Tariff Rate", "tariff_percent", "{:.2f}%"),
+            ("Duty Est.", "estimated_duty", "USD {:.2f}"),
+        ]:
+            col = QVBoxLayout()
+            lbl = QLabel(label)
+            lbl.setStyleSheet("font-size: 10px; color: #90A4AE;")
+            val = QLabel(fmt.format(self._shipment.get(key, 0)))
+            val.setStyleSheet("font-size: 14px; font-weight: 700;")
+            col.addWidget(lbl)
+            col.addWidget(val)
+            summary_row.addLayout(col)
+
+        summary_layout.addLayout(summary_row)
+        layout.addWidget(summary_frame)
+
+        # ── Reviewer Name ───────────────────────────────
+        reviewer_lbl = QLabel("REVIEWER NAME")
+        reviewer_lbl.setStyleSheet(
+            "font-size: 10px; font-weight: 700; letter-spacing: 1px;"
+        )
+        self.reviewer_input = QLineEdit()
+        from services.session import SessionManager
+        self.reviewer_input.setText(SessionManager().get_username())
+        self.reviewer_input.setPlaceholderText("Enter your name")
+        self.reviewer_input.setMinimumHeight(38)
+        layout.addWidget(reviewer_lbl)
+        layout.addWidget(self.reviewer_input)
+
+        # ── Feedback / Notes ────────────────────────────
+        feedback_lbl = QLabel("APPROVAL NOTES (OPTIONAL)")
+        feedback_lbl.setStyleSheet(
+            "font-size: 10px; font-weight: 700; letter-spacing: 1px;"
+        )
+        self.feedback_input = QTextEdit()
+        self.feedback_input.setPlaceholderText(
+            "Enter any comments regarding this approval...\n"
+            "e.g. HS Code verified with technical datasheet."
+        )
+        self.feedback_input.setMinimumHeight(80)
+        self.feedback_input.setMaximumHeight(100)
+        layout.addWidget(feedback_lbl)
+        layout.addWidget(self.feedback_input)
+
+        # ── Action Buttons ──────────────────────────────
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(12)
+
+        self.confirm_btn = QPushButton("✅  CONFIRM APPROVAL")
+        self.confirm_btn.setObjectName("btn_success")
+        self.confirm_btn.setCursor(Qt.PointingHandCursor)
+        self.confirm_btn.setMinimumHeight(44)
+        self.confirm_btn.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        self.confirm_btn.clicked.connect(self._confirm)
+
+        back_btn = QPushButton("← CANCEL")
+        back_btn.setObjectName("btn_secondary")
+        back_btn.setCursor(Qt.PointingHandCursor)
+        back_btn.setMinimumHeight(44)
+        back_btn.clicked.connect(self.reject)
+
+        btn_layout.addWidget(self.confirm_btn)
+        btn_layout.addWidget(back_btn)
+        layout.addLayout(btn_layout)
+
+    def _confirm(self):
+        """Save approval data to DB and close dialog."""
+        reviewer = self.reviewer_input.text().strip() or "Anonymous"
+        notes = self.feedback_input.toPlainText().strip()
+
+        try:
+            from database.db import update_shipment_status, insert_audit_log
+
+            sid = self._shipment["shipment_id"]
+            suggested_hs = self._shipment.get("suggested_hs_code", "")
+            tariff = self._shipment.get("tariff_percent", 0.0)
+
+            update_shipment_status(
+                shipment_id=sid,
+                status="Approved",
+                reviewer_name=reviewer,
+                review_notes=notes,
+            )
+
+            insert_audit_log(
+                shipment_id=sid,
+                action="HUMAN_APPROVED",
+                ai_recommendation=f"HS:{suggested_hs} Tariff:{tariff}%",
+                human_decision="Approved",
+                reviewer_name=reviewer,
+                notes=notes,
+            )
+
+            logger.info(f"Shipment {sid} approved by {reviewer}")
+            QMessageBox.information(
+                self, "Approval Saved",
+                f"✅ Shipment has been APPROVED.\n\n"
+                f"HS Code: {suggested_hs}\n"
+                f"Tariff: {tariff:.2f}%\n"
+                f"Reviewer: {reviewer}"
+            )
+            self.accept()
+
+        except Exception as e:
+            logger.error(f"Approval save error: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to save approval:\n{e}")
+
