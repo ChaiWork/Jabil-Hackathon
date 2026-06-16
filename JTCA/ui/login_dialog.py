@@ -329,10 +329,22 @@ class LoginDialog(QDialog):
         self._validate()
 
     def _validate(self):
+        # Disable Sign In until the user has typed a value and the email/username
+        # matches an already-registered user record.
         name = self.name_input.text().strip()
         has_role = self.selected_role is not None
         has_name = len(name) > 0
-        self.sign_in_btn.setEnabled(has_role and has_name)
+
+        is_registered = False
+        if has_role and has_name:
+            try:
+                from services.auth import AuthService
+                is_registered = AuthService().user_exists(name, self.selected_role)
+            except Exception:
+                is_registered = False
+
+        self.sign_in_btn.setEnabled(has_role and has_name and is_registered)
+
 
     def _on_sign_in(self):
         name = self.name_input.text().strip()
