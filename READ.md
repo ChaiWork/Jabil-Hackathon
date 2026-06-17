@@ -4,6 +4,19 @@ JTAA is an enterprise-grade, AI-powered trade compliance desktop application des
 
 ---
 
+## 🔍 What JTAA Does (System Overview)
+
+In global logistics, shipping components across international borders requires matching every imported part with the correct government-mandated **Harmonized System (HS) tariff code**. Manual classification is extremely slow (taking 30–40 minutes per invoice) and carries high risks of human error, leading to customs delays or severe financial penalties.
+
+**JTAA solves this by automating the audit process:**
+
+1. **Extracts Invoice Data**: A compliance officer drags and drops a supplier invoice PDF. JTAA automatically extracts all part numbers, descriptions, values, and origin details.
+2. **Finds Matching Rules**: It semantically searches a local vector knowledge base (updated automatically by web crawlers scraping trade portals like MITI, WTO, and ASEAN) for relevant trade laws and Free Trade Agreements.
+3. **Recommends & Calculates**: Using Google Gemini, it matches the imported part to its correct HS Code, explains its reasoning step-by-step, and computes the exact customs duties and landed costs.
+4. **Human Review & SAP Sync**: The auditor reviews the AI's suggestions on a desktop dashboard, makes adjustments if needed, and exports the approved records directly into an SAP-compatible Excel spreadsheet.
+
+---
+
 ## 💡 Key Features (Proposed Solution)
 
 JTAA leverages AI to automate complex trade compliance activities through five key features:
