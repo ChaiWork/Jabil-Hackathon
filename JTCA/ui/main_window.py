@@ -1,6 +1,6 @@
 """
 ============================================================
-JTCA - Main Window
+JTAA - Main Window
 PySide6 root window with sidebar navigation
 Dual theme system (Compliance White / Deep Compliance)
 ============================================================
@@ -694,7 +694,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("JTCA — Jabil TradeAI Compliance Assistant")
+        self.setWindowTitle("JTAA — Jabil Trade AI Assistant")
         self.setMinimumSize(1280, 780)
         self.resize(1400, 860)
         
@@ -731,7 +731,7 @@ class MainWindow(QMainWindow):
         logo_mark.setObjectName("top_logo_mark")
         logo_mark.setAlignment(Qt.AlignCenter)
 
-        wordmark = QLabel("JTCA")
+        wordmark = QLabel("JTAA")
         wordmark.setObjectName("top_wordmark")
 
         version_chip = QLabel("v1.0.0 POC")
@@ -955,7 +955,7 @@ class MainWindow(QMainWindow):
             4: "AI Assistant / Chat Guidance",
             5: "Shipments / Shipment Details"
         }
-        self.breadcrumb_lbl.setText(breadcrumbs.get(index, "JTCA"))
+        self.breadcrumb_lbl.setText(breadcrumbs.get(index, "JTAA"))
         self.page_changed.emit(index)
 
     def _on_nav_clicked(self, button: SidebarButton):
@@ -1138,7 +1138,7 @@ class MainWindow(QMainWindow):
         reply = QMessageBox.question(
             self,
             "Sign Out",
-            "Are you sure you want to sign out of JTCA?",
+            "Are you sure you want to sign out of JTAA?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )

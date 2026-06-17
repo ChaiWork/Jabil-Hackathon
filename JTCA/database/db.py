@@ -39,6 +39,7 @@ from database.postgres_db import (
     insert_audit_log,
     get_audit_log,
     get_recent_audit_log,
+    delete_audit_log,
 )
 
 # Export Mongo clear function as well
@@ -63,4 +64,5 @@ __all__ = [
     "insert_audit_log",
     "get_audit_log",
     "get_recent_audit_log",
+    "delete_audit_log",
 ]

@@ -1,6 +1,6 @@
 """
 ============================================================
-JTCA - Login & Role Selection Dialog
+JTAA - Login & Role Selection Dialog
 Select between Admin and Trade Analyst roles
 Supports Email/Password verification and Registration
 ============================================================
@@ -99,7 +99,7 @@ class LoginDialog(QDialog):
 
     def __init__(self, parent=None, theme: str = "dark"):
         super().__init__(parent)
-        self.setWindowTitle("Sign In — JTCA Compliance Assistant")
+        self.setWindowTitle("Sign In — Jabil Trade AI Assistant")
         self.setMinimumSize(560, 560)
         self.setModal(True)
         self.selected_role = None
@@ -209,7 +209,7 @@ class LoginDialog(QDialog):
         jabil_lbl = QLabel("JABIL")
         jabil_lbl.setAlignment(Qt.AlignCenter)
 
-        subtitle_lbl = QLabel("TradeAI Compliance Assistant")
+        subtitle_lbl = QLabel("Jabil Trade AI Assistant")
         subtitle_lbl.setAlignment(Qt.AlignCenter)
 
         header_layout.addWidget(jabil_lbl)

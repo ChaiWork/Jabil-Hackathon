@@ -1,6 +1,6 @@
 """
 ============================================================
-JTCA - Jabil TradeAI Compliance Assistant
+JTAA - Jabil Trade AI Assistant
 Main Application Entry Point
 
 Usage:
@@ -55,7 +55,7 @@ logging.basicConfig(
         logging.FileHandler(LOG_DIR / "app.log", encoding="utf-8"),
     ],
 )
-logger = logging.getLogger("JTCA")
+logger = logging.getLogger("JTAA")
 
 # ─────────────────────────────────────────────
 # PySide6 DPI and platform settings
@@ -110,7 +110,7 @@ def create_splash_screen() -> QSplashScreen:
     painter.setPen(QColor("#42A5F5"))
     font2 = QFont("Segoe UI", 14, QFont.Normal)
     painter.setFont(font2)
-    painter.drawText(QRectF(0, 115, 580, 40), Qt.AlignHCenter, "TradeAI Compliance Assistant")
+    painter.drawText(QRectF(0, 115, 580, 40), Qt.AlignHCenter, "Jabil Trade AI Assistant")
 
     # Version
     painter.setPen(QColor("#4A6FA5"))
@@ -207,13 +207,13 @@ def initialize_db_only(splash: QSplashScreen | None = None):
 # ─────────────────────────────────────────────
 def main():
     logger.info("=" * 60)
-    logger.info("JTCA - Jabil TradeAI Compliance Assistant")
+    logger.info("JTAA - Jabil Trade AI Assistant")
     logger.info("Starting application...")
     logger.info("=" * 60)
 
     app = QApplication(sys.argv)
-    app.setApplicationName("JTCA")
-    app.setApplicationDisplayName("Jabil TradeAI Compliance Assistant")
+    app.setApplicationName("JTAA")
+    app.setApplicationDisplayName("Jabil Trade AI Assistant")
     app.setApplicationVersion("1.0.0")
     app.setOrganizationName("Jabil")
 
@@ -238,7 +238,7 @@ def main():
         splash.hide()
         QMessageBox.critical(
             None, "Initialization Error",
-            f"JTCA failed to start:\n\n{e}\n\n"
+            f"JTAA failed to start:\n\n{e}\n\n"
             "Please check your requirements are installed:\n"
             "  pip install -r requirements.txt"
         )

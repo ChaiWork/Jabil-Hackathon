@@ -117,6 +117,7 @@ class ReportsPage(QWidget):
     def __init__(self):
         super().__init__()
         self._setup_ui()
+        self.apply_permissions()
         self.refresh_data()
 
     def _setup_ui(self):
@@ -136,6 +137,12 @@ class ReportsPage(QWidget):
         refresh_btn.setMaximumWidth(110)
         refresh_btn.clicked.connect(self.refresh_data)
 
+        self.delete_btn = QPushButton("🗑️ Delete Log")
+        self.delete_btn.setObjectName("btn_secondary")
+        self.delete_btn.setCursor(Qt.PointingHandCursor)
+        self.delete_btn.setMaximumWidth(130)
+        self.delete_btn.clicked.connect(self._delete_selected_log)
+
         export_btn = QPushButton("📊 Export Report")
         export_btn.setObjectName("btn_primary")
         export_btn.setCursor(Qt.PointingHandCursor)
@@ -145,6 +152,7 @@ class ReportsPage(QWidget):
         header.addWidget(title)
         header.addStretch()
         header.addWidget(refresh_btn)
+        header.addWidget(self.delete_btn)
         header.addWidget(export_btn)
         layout.addLayout(header)
 
@@ -220,6 +228,8 @@ class ReportsPage(QWidget):
         self.audit_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
         self.audit_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
         self.audit_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.audit_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.audit_table.setSelectionMode(QTableWidget.SingleSelection)
         self.audit_table.verticalHeader().setVisible(False)
         self.audit_table.setShowGrid(False)
         self.audit_table.doubleClicked.connect(self._on_row_double_clicked)
@@ -257,7 +267,8 @@ class ReportsPage(QWidget):
                     "HUMAN_APPROVED": "#10B981",
                     "HUMAN_REJECTED_OVERRIDE": "#EF4444",
                 }
-                for col_idx, value in enumerate(row):
+                display_fields = row[1:]
+                for col_idx, value in enumerate(display_fields):
                     val_str = str(value or "")
                     if col_idx == 0:
                         val_str = val_str[:19].replace("T", " ")
@@ -275,10 +286,50 @@ class ReportsPage(QWidget):
         except Exception as e:
             logger.error(f"Reports refresh error: {e}")
 
+    def apply_permissions(self):
+        """Enforce role-based restrictions on reports page."""
+        from services.session import SessionManager
+        session = SessionManager()
+        is_admin = session.is_admin()
+        self.delete_btn.setVisible(is_admin)
+
+    def _delete_selected_log(self):
+        row = self.audit_table.currentRow()
+        if row < 0 or not hasattr(self, "_audit_rows") or row >= len(self._audit_rows):
+            QMessageBox.warning(self, "Delete Log", "Please select an audit log row from the table first.")
+            return
+
+        log_entry = self._audit_rows[row]
+        audit_id = log_entry[0]
+        shipment_id = log_entry[2]
+        timestamp = log_entry[1][:19].replace("T", " ")
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            f"Are you sure you want to delete the audit log for shipment {shipment_id} at {timestamp}?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+
+        if reply == QMessageBox.Yes:
+            try:
+                from database.db import delete_audit_log
+                success = delete_audit_log(audit_id)
+                if success:
+                    QMessageBox.information(self, "Deleted", "Audit log entry successfully deleted.")
+                    self.refresh_data()
+                else:
+                    QMessageBox.critical(self, "Error", "Failed to delete the audit log entry from database.")
+            except Exception as e:
+                logger.error(f"Error deleting audit log: {e}")
+                QMessageBox.critical(self, "Error", f"An error occurred while deleting:\n{e}")
+
     def _on_row_double_clicked(self, index):
         row = index.row()
         if hasattr(self, "_audit_rows") and row < len(self._audit_rows):
-            dialog = AuditDetailDialog(self._audit_rows[row], self)
+            # Pass the 7-tuple to AuditDetailDialog (excluding the ID)
+            dialog = AuditDetailDialog(self._audit_rows[row][1:], self)
             dialog.exec()
 
     def _export_report(self):
@@ -290,7 +341,7 @@ class ReportsPage(QWidget):
                 QMessageBox.information(self, "No Data", "No shipments to export.")
                 return
             path, _ = QFileDialog.getSaveFileName(
-                self, "Export Report", "JTCA_Report.xlsx", "Excel Files (*.xlsx)"
+                self, "Export Report", "JTAA_Report.xlsx", "Excel Files (*.xlsx)"
             )
             if path:
                 result = export_to_excel(shipments, path)

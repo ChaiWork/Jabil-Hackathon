@@ -1,4 +1,4 @@
-"""JTCA - Register Dialog
+"""JTAA - Register Dialog
 
 Email + password registration for Admin / Trade Analyst.
 """
@@ -15,7 +15,7 @@ from services.auth import AuthService
 class RegisterDialog(QDialog):
     def __init__(self, selected_role: str = "Trade Analyst", parent=None, theme: str = "dark"):
         super().__init__(parent)
-        self.setWindowTitle("Register — JTCA")
+        self.setWindowTitle("Register — JTAA")
         self.setMinimumSize(520, 420)
         self.setModal(True)
         self.selected_role = selected_role
@@ -89,7 +89,7 @@ class RegisterDialog(QDialog):
         layout.setContentsMargins(28, 24, 28, 24)
         layout.setSpacing(14)
 
-        title = QLabel("Create your JTCA account")
+        title = QLabel("Create your JTAA account")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 18px; font-weight: 800;")
         layout.addWidget(title)

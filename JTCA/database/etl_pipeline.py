@@ -236,7 +236,7 @@ if __name__ == "__main__":
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )
     print("=" * 55)
-    print(" JTCA ETL Pipeline - Manual Run")
+    print(" JTAA ETL Pipeline - Manual Run")
     print("=" * 55)
 
     # Step 0: Ensure PostgreSQL schema exists

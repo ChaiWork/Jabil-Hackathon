@@ -9,7 +9,7 @@ from rag.vector_store import get_vector_count
 
 def check_databases():
     print("\n" + "="*50)
-    print("JTCA DATABASE STATUS REPORT")
+    print("JTAA DATABASE STATUS REPORT")
     print("="*50)
     
     # 1. Check SQLite Database

@@ -1,6 +1,6 @@
-# Jabil TradeAI Compliance Assistant (JTCA)
+# Jabil Trade AI Assistant (JTAA)
 
-JTCA is an enterprise-grade AI-powered trade compliance desktop application designed to scrape, structure, and audit import tariff rates, ensuring trade rules adhere to Free Trade Agreements (FTAs) like ACFTA and USMCA.
+JTAA is an enterprise-grade AI-powered trade compliance desktop application designed to scrape, structure, and audit import tariff rates, ensuring trade rules adhere to Free Trade Agreements (FTAs) like ACFTA and USMCA.
 
 ---
 

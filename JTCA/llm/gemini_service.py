@@ -506,7 +506,7 @@ def ask_assistant_question(query: str, rag_context: str) -> str:
         return _demo_assistant_response(query)
 
     system_instructions = (
-        "You are an expert trade compliance assistant named JTCA Compliance Assistant. "
+        "You are an expert trade compliance assistant named JTAA Jabil Trade AI Assistant. "
         "Your goal is to help users find HS Codes, product descriptions, and trade agreements (FTAs) "
         "applicable to their query. Use the retrieved regulations context below to provide accurate, "
         "compliance-based recommendations.\n\n"
@@ -546,7 +546,7 @@ def _demo_assistant_response(query: str) -> str:
     """
     query_lower = query.lower()
     
-    response = "### 🤖 JTCA Compliance Assistant (Demo Mode)\n\n"
+    response = "### 🤖 JTAA Jabil Trade AI Assistant (Demo Mode)\n\n"
     response += "> **Note**: Gemini API key is not configured. Running in local simulation mode.\n\n"
     
     if "pcb" in query_lower or "printed circuit" in query_lower or "circuit board" in query_lower:

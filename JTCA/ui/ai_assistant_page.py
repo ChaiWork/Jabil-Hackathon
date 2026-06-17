@@ -1,6 +1,6 @@
 """
 ============================================================
-JTCA - AI Compliance Assistant Page
+JTAA - AI Trade Assistant Page
 Provides interactive natural language search for HS codes,
 descriptions, and trade agreements using RAG and Gemini.
 ============================================================
@@ -118,7 +118,7 @@ class ChatBubble(QFrame):
         layout.setSpacing(4)
         
         # Sender Header
-        sender_lbl = QLabel("👤 You" if self.is_user else "🤖 JTCA Compliance Assistant")
+        sender_lbl = QLabel("👤 You" if self.is_user else "🤖 JTAA Jabil Trade AI Assistant")
         sender_lbl.setStyleSheet("font-weight: bold; font-size: 11px; color: #42A5F5;")
         layout.addWidget(sender_lbl)
         
@@ -284,7 +284,7 @@ class AiAssistantPage(QWidget):
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(4)
         
-        title_lbl = QLabel("🤖 AI Compliance Assistant")
+        title_lbl = QLabel("🤖 Jabil Trade AI Assistant")
         title_lbl.setObjectName("page_title")
         
         sub_lbl = QLabel("Search the knowledge base, verify HS codes, and determine applicable trade agreements (FTAs) using RAG and Gemini AI.")
@@ -367,7 +367,7 @@ class AiAssistantPage(QWidget):
         input_layout.setSpacing(8)
         
         self.query_input = QLineEdit()
-        self.query_input.setPlaceholderText("Ask the compliance assistant (e.g. 'What is the tariff on PCB from China to US?')")
+        self.query_input.setPlaceholderText("Ask the trade assistant (e.g. 'What is the tariff on PCB from China to US?')")
         self.query_input.setMinimumHeight(42)
         self.query_input.returnPressed.connect(self._on_send_clicked)
         
@@ -427,7 +427,7 @@ class AiAssistantPage(QWidget):
         
         # Prepopulate with a friendly welcome message
         self.add_assistant_message(
-            "Hello! I am your **AI Compliance Assistant**.\n\n"
+            "Hello! I am your **Jabil Trade AI Assistant**.\n\n"
             "I can help you search for **HS Codes**, verify **product descriptions**, and determine "
             "what **trade agreements (FTAs)** are active between regions.\n\n"
             "Ask me a question or choose one of the quick suggestions above to begin!"

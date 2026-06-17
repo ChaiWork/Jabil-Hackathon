@@ -564,7 +564,7 @@ def get_recent_audit_log(limit: int = 200) -> list[tuple]:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT timestamp, shipment_id, action, ai_recommendation,
+                SELECT id, timestamp, shipment_id, action, ai_recommendation,
                        human_decision, reviewer_name, notes
                 FROM audit_log
                 ORDER BY timestamp DESC
@@ -574,6 +574,7 @@ def get_recent_audit_log(limit: int = 200) -> list[tuple]:
             )
             return [
                 (
+                    row.get("id"),
                     row.get("timestamp"),
                     row.get("shipment_id"),
                     row.get("action"),
@@ -584,6 +585,23 @@ def get_recent_audit_log(limit: int = 200) -> list[tuple]:
                 )
                 for row in cur.fetchall()
             ]
+    finally:
+        conn.close()
+
+
+def delete_audit_log(audit_id: int) -> bool:
+    """Delete a specific audit log entry by its ID."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM audit_log WHERE id = %s", (audit_id,))
+        conn.commit()
+        logger.info(f"[PostgreSQL] Audit log deleted: {audit_id}")
+        return True
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"[PostgreSQL] Failed to delete audit log {audit_id}: {e}")
+        return False
     finally:
         conn.close()
 

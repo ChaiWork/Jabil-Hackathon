@@ -1,4 +1,4 @@
-# JTCA — Jabil TradeAI Compliance Assistant
+# JTAA — Jabil Trade AI Assistant
 
 > **Proof-of-Concept** for Jabil IT ECP Bootcamp 3.0 | Use Case 2: Tariff Calculation Automation
 
